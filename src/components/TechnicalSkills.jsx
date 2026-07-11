@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { technicalSkills } from '../data/portfolioData';
+import { useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion'; // separate for cleaner imports
+import { useData } from '../context/DataContext';
 import { 
   SiHtml5, SiJavascript, SiTypescript, SiReact, SiNextdotjs, 
   SiTailwindcss, SiFramer, SiFigma, SiBlender, 
@@ -78,7 +79,7 @@ const getSkillIcon = (name) => {
   return skillIcons[name] || <span className="w-4 h-4 rounded-full bg-red-500/50 block" />;
 };
 
-const SkillProgress = ({ name, level }) => {
+const SkillProgress = ({ name, level, icon }) => {
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-1.5">
@@ -91,7 +92,7 @@ const SkillProgress = ({ name, level }) => {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="text-lg flex items-center justify-center w-5 h-5 text-white/80 shrink-0"
           >
-            {getSkillIcon(name)}
+            {icon ? <span>{icon}</span> : getSkillIcon(name)}
           </motion.div>
           <span className="text-white/95 text-xs md:text-sm font-semibold tracking-wide">{name}</span>
         </div>
@@ -197,7 +198,7 @@ const SkillCard = ({ category, index }) => {
           </h3>
           <div className="space-y-4">
             {category.skills.map((skill) => (
-              <SkillProgress key={skill.name} name={skill.name} level={skill.level} />
+              <SkillProgress key={skill.name} name={skill.name} level={skill.level} icon={skill.icon} />
             ))}
           </div>
         </div>
@@ -207,6 +208,21 @@ const SkillCard = ({ category, index }) => {
 };
 
 const TechnicalSkills = () => {
+  const { data } = useData();
+  const allSkills = [...(data?.skills || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const activeSkills = allSkills.filter(s => s.showSkill !== false);
+
+  const CATEGORIES = ['Frontend Development', 'UI / UX & 3D Design', 'Development Tools', 'Additional Skills'];
+  
+  const dynamicCategories = CATEGORIES.map(catTitle => {
+    return {
+      title: catTitle,
+      skills: activeSkills
+        .filter(s => s.category === catTitle)
+        .map(s => ({ name: s.name, level: s.percentage, icon: s.icon }))
+    };
+  }).filter(cat => cat.skills.length > 0);
+
   return (
     <section id="skills" className="bg-[#0a0a0a] pt-24 pb-28 px-6 md:px-12 w-full relative overflow-hidden font-sans">
       {/* Background Soft Animated Radial glows */}
@@ -231,7 +247,7 @@ const TechnicalSkills = () => {
 
         {/* Skills Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-          {technicalSkills.categories.map((category, index) => (
+          {dynamicCategories.map((category, index) => (
             <SkillCard key={category.title} category={category} index={index} />
           ))}
         </div>
